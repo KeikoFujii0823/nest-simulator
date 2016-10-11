@@ -301,6 +301,15 @@ public:
     double I_T_;   //!< Low-thresh Ca current; member only to allow recording
     double I_h_;   //!< Pacemaker current; member only to allow recording
 
+    //keiko
+    double G_AMPA_keiko;
+    double G_GABA_A_keiko;
+    double I_syn_GABA_A;
+    double I_syn_GABA_B;    
+    double I_syn_AMPA;
+    double I_syn_NMDA;
+    
+
     State_();
     State_( const Parameters_& p );
     State_( const State_& s );
@@ -409,6 +418,40 @@ private:
   {
     return S_.I_h_;
   }
+
+  //keiko
+  double_t
+  get_G_GABA_A() const
+  {
+    return S_.G_GABA_A_keiko;
+  }
+  double_t
+  get_G_AMPA() const
+  {
+    return S_.G_AMPA_keiko;
+  }
+  double_t
+  get_I_syn_GABA_A() const
+  {
+    return S_.I_syn_GABA_A;
+  }
+  double_t
+  get_I_syn_GABA_B() const
+  {
+    return S_.I_syn_GABA_B;
+  }
+  double_t
+  get_I_syn_AMPA() const
+  {
+    return S_.I_syn_AMPA;
+  }
+  double_t
+  get_I_syn_NMDA() const
+  {
+    return S_.I_syn_NMDA;
+  }
+
+
 
   static RecordablesMap< ht_neuron > recordablesMap_;
 

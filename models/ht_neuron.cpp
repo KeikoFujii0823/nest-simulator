@@ -61,6 +61,15 @@ RecordablesMap< ht_neuron >::create()
   insert_( Name( "I_KNa" ), &ht_neuron::get_I_KNa_ );
   insert_( Name( "I_T" ), &ht_neuron::get_I_T_ );
   insert_( Name( "I_h" ), &ht_neuron::get_I_h_ );
+
+  //keiko
+  insert_( Name("G_GABA_A_keiko"),  &ht_neuron::get_G_GABA_A);
+  insert_( Name("G_AMPA_keiko"),  &ht_neuron::get_G_AMPA);
+  insert_( Name("I_syn_GABA_A"),  &ht_neuron::get_I_syn_GABA_A);
+  insert_( Name("I_syn_GABA_B"),  &ht_neuron::get_I_syn_GABA_B);
+  insert_( Name("I_syn_AMPA"),  &ht_neuron::get_I_syn_AMPA);
+  insert_( Name("I_syn_NMDA"),  &ht_neuron::get_I_syn_NMDA);
+
 }
 
 /* ----------------------------------------------------------------
@@ -80,6 +89,12 @@ ht_neuron_dynamics( double, const double y[], double f[], void* pnode )
   // easier access to membrane potential
   const double& V = y[ S::VM ];
 
+  //--- keiko begin
+  //if(V<-80.0){
+  //  V = -80.0;
+  //}
+  //--- keiko end
+  
   // Synaptic channels
   double I_syn = 0;
 
@@ -94,6 +109,20 @@ ht_neuron_dynamics( double, const double y[], double f[], void* pnode )
   I_syn += -y[ S::G_GABA_A ] * ( V - node.P_.GABA_A_E_rev );
   I_syn += -y[ S::G_GABA_B ] * ( V - node.P_.GABA_B_E_rev );
 
+  // keiko changed sign for GABA_A & GABA_B
+  // I_syn += -y[ S::G_AMPA ] * ( V - node.P_.AMPA_E_rev );
+  // I_syn +=
+  //   -y[ S::G_NMDA ] * ( A1 * Mg_f + A2 * Mg_s ) * ( V - node.P_.NMDA_E_rev );
+  // I_syn += y[ S::G_GABA_A ] * ( V - node.P_.GABA_A_E_rev ); // changed sign
+  // I_syn += y[ S::G_GABA_B ] * ( V - node.P_.GABA_B_E_rev ); // changed sign
+
+  // keiko for data analysis of I_syn_*
+  node.S_.I_syn_GABA_A = -y[ S::G_GABA_A ] * ( V - node.P_.GABA_A_E_rev );
+  node.S_.I_syn_GABA_B = -y[ S::G_GABA_B ] * ( V - node.P_.GABA_B_E_rev );
+  node.S_.I_syn_AMPA = -y[ S::G_AMPA ] * ( V - node.P_.AMPA_E_rev );
+  node.S_.I_syn_NMDA = -y[ S::G_NMDA ] * ( V - node.P_.NMDA_E_rev )
+    / ( 1 + std::exp( ( node.P_.NMDA_Vact - V ) / node.P_.NMDA_Sact ) );
+  
   // The spike current is only activate immediately after a spike.
   const double I_spike =
     node.S_.g_spike_ ? -( V - node.P_.E_K ) / node.P_.Tau_spike : 0;
@@ -141,6 +170,16 @@ ht_neuron_dynamics( double, const double y[], double f[], void* pnode )
   // Synaptic channels
 
   // AMPA
+  //---keiko begin
+  //if( y[S::G_AMPA] < node.P_.AMPA_g_peak ){
+  //  f[ S::DG_AMPA ] = -y[ S::DG_AMPA ] / node.P_.AMPA_Tau_1;
+  //  f[ S::G_AMPA ] = y[ S::DG_AMPA ] - y[ S::G_AMPA ] / node.P_.AMPA_Tau_2;    
+  //}else{
+  //  f[ S::DG_AMPA ] = -y[ S::DG_AMPA ] / node.P_.AMPA_Tau_1;
+  //  f[ S::G_AMPA ] = y[ S::DG_AMPA ] - node.P_.AMPA_g_peak / node.P_.AMPA_Tau_2;
+  //}
+  //--- keiko end
+  //--- original
   f[ S::DG_AMPA ] = -y[ S::DG_AMPA ] / node.P_.AMPA_Tau_1;
   f[ S::G_AMPA ] = y[ S::DG_AMPA ] - y[ S::G_AMPA ] / node.P_.AMPA_Tau_2;
 
@@ -149,6 +188,18 @@ ht_neuron_dynamics( double, const double y[], double f[], void* pnode )
   f[ S::G_NMDA ] = y[ S::DG_NMDA ] - y[ S::G_NMDA ] / node.P_.NMDA_Tau_2;
 
   // GABA_A
+  //---keiko begin
+  //f[ S::G_GABA_A ] = 0.1*node.P_.GABA_A_g_peak;
+  //if( y[S::G_GABA_A] < node.P_.GABA_A_g_peak ){
+  //  f[ S::DG_GABA_A ] = -y[ S::DG_GABA_A ] / node.P_.GABA_A_Tau_1;
+  //  f[ S::G_GABA_A ] = y[ S::DG_GABA_A ] - y[ S::G_GABA_A ] / node.P_.GABA_A_Tau_2;    
+  //}else{
+  //  f[ S::DG_GABA_A ] = -y[ S::DG_GABA_A ] / node.P_.GABA_A_Tau_1;
+  //  //f[ S::G_GABA_A ] = y[ S::DG_GABA_A ] - node.P_.GABA_A_g_peak / node.P_.GABA_A_Tau_2;
+  //  f[ S::G_GABA_A ] = 0.1*node.P_.GABA_A_g_peak;
+  //}
+  //--- keiko end
+  //--- original
   f[ S::DG_GABA_A ] = -y[ S::DG_GABA_A ] / node.P_.GABA_A_Tau_1;
   f[ S::G_GABA_A ] =
     y[ S::DG_GABA_A ] - y[ S::G_GABA_A ] / node.P_.GABA_A_Tau_2;
@@ -497,8 +548,13 @@ nest::ht_neuron::init_buffers_()
 
   if ( B_.s_ == 0 )
   {
+    // original
     B_.s_ =
       gsl_odeiv_step_alloc( gsl_odeiv_step_rkf45, State_::STATE_VEC_SIZE );
+    //
+    // keiko
+    // B_.s_ =
+    //   gsl_odeiv_step_alloc( gsl_odeiv_step_rk2, State_::STATE_VEC_SIZE );
   }
   else
   {
@@ -715,9 +771,20 @@ nest::ht_neuron::handle( SpikeEvent& e )
   assert( e.get_delay() > 0 );
   assert( e.get_rport() < static_cast< int >( B_.spike_inputs_.size() ) );
 
-  B_.spike_inputs_[ e.get_rport() ].add_value(
-    e.get_rel_delivery_steps( kernel().simulation_manager.get_slice_origin() ),
-    e.get_weight() * e.get_multiplicity() );
+  //--- original
+  //B_.spike_inputs_[ e.get_rport() ].add_value(
+  //  e.get_rel_delivery_steps( kernel().simulation_manager.get_slice_origin() ),
+  //  e.get_weight() * e.get_multiplicity() );
+
+  //--- keiko
+  if( e.get_weight() > 0.0 ){
+    B_.spike_inputs_[ e.get_rport() ].add_value(e.get_rel_delivery_steps( kernel().simulation_manager.get_slice_origin() ),
+						e.get_weight() * e.get_multiplicity() );
+  }else{
+    B_.spike_inputs_[ e.get_rport() ].add_value(e.get_rel_delivery_steps( kernel().simulation_manager.get_slice_origin() ),
+						-e.get_weight() * e.get_multiplicity() );
+  }
+  
 }
 
 void
