@@ -308,8 +308,10 @@ public:
     double I_syn_GABA_B;    
     double I_syn_AMPA;
     double I_syn_NMDA;
-    
+    double spike_input_AMPA;
+    double sender_gid_AMPA;
 
+    
     State_();
     State_( const Parameters_& p );
     State_( const State_& s );
@@ -342,6 +344,10 @@ private:
     /** buffers and sums up incoming spikes/currents */
     std::vector< RingBuffer > spike_inputs_;
     RingBuffer currents_;
+
+    // keiko for debug
+    std::vector< RingBuffer > sender_gid_;
+    
 
     /** GSL ODE stuff */
     gsl_odeiv_step* s_;    //!< stepping function
@@ -450,8 +456,16 @@ private:
   {
     return S_.I_syn_NMDA;
   }
-
-
+  double_t
+  get_spike_input_AMPA() const
+  {
+    return S_.spike_input_AMPA;
+  }
+  double_t
+  get_sender_gid_AMPA() const
+  {
+    return S_.sender_gid_AMPA;
+  }
 
   static RecordablesMap< ht_neuron > recordablesMap_;
 
